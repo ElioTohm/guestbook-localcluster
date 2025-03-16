@@ -1,0 +1,50 @@
+---
+cluster:
+  name: local
+
+destinations:
+  - name: prometheus
+    type: prometheus
+    url: http://monitoring-mimir-nginx/api/v1/push
+
+  - name: loki
+    type: loki
+    url: http://monitoring-loki-gateway/loki/api/v1/push
+
+clusterMetrics:
+  enabled: true
+  controlPlane:
+    enabled: true
+
+clusterEvents:
+  enabled: true
+
+applicationObservability:
+  enabled: false
+  receivers:
+    zipkin:
+      enabled: true
+
+podLogs:
+  enabled: true
+
+profiling:
+  enabled: false
+
+alloy-metrics:
+  enabled: true
+alloy-singleton:
+  enabled: true
+alloy-logs:
+  enabled: true
+alloy-receiver:
+  enabled: false
+alloy-profiles:
+  enabled: false
+
+integrations:
+  etcd:
+    instances:
+      - name: k8s-controlplane-etcd
+        labelSelectors:
+          app.kubernetes.io/component: etcd
