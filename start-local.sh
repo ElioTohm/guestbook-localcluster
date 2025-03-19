@@ -1,9 +1,10 @@
-#!/bin/sh
-#
+#!/bin/bash
+. $(pwd)/init.sh
+
 # https://kind.sigs.k8s.io/docs/user/local-registry/
 set -o errexit
 
-# create registry container unless it already exists
+print_headline "create registry container unless it already exists"
 reg_name='kind-registry'
 reg_port='5000'
 if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)" != 'true' ]; then
@@ -12,7 +13,7 @@ if [ "$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true
     registry:2
 fi
 
-# create a cluster with the local registry enabled in containerd
+print_header "create a cluster with the local registry enabled in containerd"
 # also add a port mapping for the ingress https://kind.sigs.k8s.io/docs/user/ingress/
 cat <<EOF | kind create cluster --config=-
 kind: Cluster
@@ -37,9 +38,13 @@ nodes:
     hostPort: 443
     protocol: TCP
 - role: worker
+- role: worker
 EOF
 
-# connect the registry to the cluster network if not already connected
+print_header "switch kubectl context to the local cluster"
+kubectl config use-context kind-kind
+
+print_header "connect the registry to the cluster network if not already connected"
 if [ "$(docker inspect -f='{{json .NetworkSettings.Networks.kind}}' "${reg_name}")" = 'null' ]; then
   docker network connect "kind" "${reg_name}"
 fi
@@ -58,26 +63,29 @@ data:
     help: "https://kind.sigs.k8s.io/docs/user/local-registry/"
 EOF
 
-###
-### Setup Ingress
+print_header "Setup Ingress"
 kubectl apply -f "https://raw.githubusercontent.com/kubernetes/ingress-nginx/refs/heads/main/deploy/static/provider/kind/deploy.yaml"
+print_header "waiting for nginx ingress installation to be complete"
+kubectl wait pod -l app.kubernetes.io/component=controller,app.kubernetes.io/name=ingress-nginx --for=condition=Ready --namespace=ingress-nginx --timeout=300s
 
-## 
-## Build localy the images and tag
+print_header "Install Grafana stack LGTM distriuted"
+./grafana/deploy.sh
+
+print_headline "Build localy the images and tag"
 docker build src/backend/ -t localhost:5000/python-guestbook-backend
 docker build src/frontend/ -t localhost:5000/python-guestbook-frontend
-## pull mogno image
-docker pull mongo:4
-docker tag mongo:4 localhost:5000/mongo:4 
 
-##
-## Puysh images to local registery
+print_header "Push images to local registery"
+
+docker pull mongo:4
+docker tag mongo:4 localhost:5000/mongo:4
 docker push localhost:5000/python-guestbook-backend
 docker push localhost:5000/python-guestbook-frontend
-docker push localhost:5000/mongo:4 
+docker push localhost:5000/mongo:4
 
-
-##
-## Apply modified yaml files to pull image from local-registry
+print_header "Apply modified yaml files to pull image from local-registry"
 kubectl apply -f src/backend/kubernetes-manifests
 kubectl apply -f src/frontend/kubernetes-manifests
+
+print_header "admin password: $(kubectl get secret --namespace monitoring monitoring-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)"
+

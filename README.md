@@ -1,3 +1,6 @@
-# Infrastructure Engineer Challenge
+# Guestbook
 
-Hi, please look at [instructions.md](instructions.md). # guestbook-localcluster
+## Install
+`./start-local.sh`
+
+### Notes

@@ -14,4 +14,4 @@ RUN pip install --trusted-host pypi.python.org -r requirements.txt
 COPY . .
 
 # Run app.py when the container launches
-ENTRYPOINT ["python", "back.py"]
+ENTRYPOINT ["python", "-u", "back.py"]

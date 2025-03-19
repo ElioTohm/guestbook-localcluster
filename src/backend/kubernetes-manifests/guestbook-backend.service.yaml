@@ -8,8 +8,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: python-guestbook
-    tier: backend
+    app.kubernetes.io/name: python-guestbook-backend
   ports:
-  - port: 8080
-    targetPort: http-server
+    - port: 8080
+      targetPort: http-server

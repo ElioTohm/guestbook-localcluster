@@ -8,9 +8,40 @@ import time
 from flask import Flask, render_template, redirect, url_for, request, jsonify
 import requests
 import dateutil.relativedelta
+import sys
+# OpenTelemetry imports
+from opentelemetry import trace
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
+# Set up OpenTelemetry tracing
+resource = Resource(attributes={
+    "service.name": os.environ.get("SERVICE_NAME")
+})
+trace.set_tracer_provider(TracerProvider(resource=resource))
+
+otlp_exporter = OTLPSpanExporter(
+    endpoint=os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"),
+    insecure=True 
+)
+
+# Add span processor to export traces
+span_processor = BatchSpanProcessor(otlp_exporter)
+trace.get_tracer_provider().add_span_processor(span_processor)
 
 app = Flask(__name__)
 app.config["BACKEND_URI"] = 'http://{}/messages'.format(os.environ.get('GUESTBOOK_API_ADDR'))
+
+# Instrument Flask 
+FlaskInstrumentor().instrument_app(app)
+RequestsInstrumentor().instrument()
+
+# Get a tracer for manual spans if needed
+tracer = trace.get_tracer(__name__)
 
 @app.route('/')
 def main():
@@ -24,10 +55,13 @@ def post():
     """ Send the new message to the backend and redirect to the homepage """
     new_message = {'author': request.form['name'],
                    'message':  request.form['message']}
+    print("blasd sasdasdasdasdasdasdasdasdasdasdasdasdasd", file=sys.stderr)
     requests.post(url=app.config["BACKEND_URI"],
                   data=jsonify(new_message).data,
                   headers={'content-type': 'application/json'},
                   timeout=3)
+    print("llllllllllllLLLLLLlllllllllll", file=sys.stderr)
+
     return redirect(url_for('main'))
 
 def format_duration(timestamp):
@@ -56,4 +90,4 @@ if __name__ == '__main__':
 
     # start Flask server
     # Flask's debug mode is unrelated to ptvsd debugger used by Cloud Code
-    app.run(debug=False, port=os.environ.get('PORT'), host='0.0.0.0')
+    app.run(debug=True, port=os.environ.get('PORT'), host='0.0.0.0')

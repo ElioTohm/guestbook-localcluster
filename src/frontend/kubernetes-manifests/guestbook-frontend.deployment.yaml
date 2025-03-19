@@ -3,28 +3,31 @@ kind: Deployment
 metadata:
   name: python-guestbook-frontend
   labels:
-    app: python-guestbook
-    tier: frontend
+    app.kubernetes.io/name: python-guestbook-frontend
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: python-guestbook
-      tier: frontend
+      app.kubernetes.io/name: python-guestbook-frontend
+
   template:
     metadata:
       labels:
-        app: python-guestbook
-        tier: frontend
+        app.kubernetes.io/name: python-guestbook-frontend
     spec:
       containers:
-      - name: frontend
-        image: localhost:5000/python-guestbook-frontend
-        ports:
-        - name: http-server
-          containerPort: 8080
-        env:
-        - name: PORT
-          value: "8080"
-        - name: GUESTBOOK_API_ADDR
-          value: python-guestbook-backend:8080
+        - name: frontend
+          image: localhost:5000/python-guestbook-frontend
+          imagePullPolicy: Always
+          ports:
+            - name: http-server
+              containerPort: 8080
+          env:
+            - name: SERVICE_NAME
+              value: python-guestbook-frontend
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://k8s-monitoring-alloy-receiver.monitoring:4317"
+            - name: PORT
+              value: "8080"
+            - name: GUESTBOOK_API_ADDR
+              value: python-guestbook-backend:8080

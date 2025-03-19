@@ -8,8 +8,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: python-guestbook
-    tier: frontend
+    app.kubernetes.io/name: python-guestbook-frontend
   ports:
-  - port: 80
-    targetPort: http-server
+    - port: 80
+      targetPort: http-server
