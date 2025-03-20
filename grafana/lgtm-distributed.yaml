@@ -59,3 +59,25 @@ tempo:
     otlp:
       http:
         enabled: true
+
+loki:
+  ruler:
+    enabled: true # Explicitly enable ruler
+    replicas: 1
+    storage:
+      type: local
+      local:
+        directory: /etc/loki/rules
+    ring:
+      kvstore:
+        store: memberlist
+    rule_path: /tmp/loki/scratch
+    alertmanager_url: https://monitoring-mimir-alertmanager:8080
+    extraVolumes:
+      - name: ruler-storage
+        emptyDir: {}
+    extraVolumeMounts:
+      - name: ruler-storage
+        mountPath: /etc/loki/rules
+    persistence:
+      enabled: false
