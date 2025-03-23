@@ -1,4 +1,114 @@
 grafana:
+  alerting:
+    policies.yaml:
+      apiVersion: 1
+      policies:
+        - orgId: 1
+          receiver: grafana-default-email
+          group_by:
+            - grafana_folder
+            - alertname
+          routes:
+            - receiver: pagerduty
+              object_matchers:
+                - - Critical
+                  - =
+                  - "true"
+    rules.yaml:
+      apiVersion: 1
+      groups:
+        - orgId: 1
+          name: k8s
+          folder: Kubernetes
+          interval: 5m
+          rules:
+            - uid: cegqd5gs69jb4a
+              title: pod_restart
+              condition: B
+              data:
+                - refId: A
+                  relativeTimeRange:
+                    from: 600
+                    to: 0
+                  datasourceUid: prom
+                  model:
+                    editorMode: code
+                    expr: rate(kube_pod_container_status_restarts_total{job="integrations/kubernetes/kube-state-metrics"}[5m])
+                    instant: true
+                    intervalMs: 1000
+                    legendFormat: __auto
+                    maxDataPoints: 43200
+                    range: false
+                    refId: A
+                - refId: B
+                  datasourceUid: __expr__
+                  model:
+                    conditions:
+                      - evaluator:
+                          params:
+                            - 0
+                            - 0
+                          type: gt
+                        operator:
+                          type: and
+                        query:
+                          params: []
+                        reducer:
+                          params: []
+                          type: avg
+                        type: query
+                    datasource:
+                      name: Expression
+                      type: __expr__
+                      uid: __expr__
+                    expression: A
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    refId: B
+                    type: threshold
+              dashboardUid: k8s_views_ns
+              panelId: 75
+              noDataState: NoData
+              execErrState: Error
+              for: 5m
+              annotations:
+                __dashboardUid__: k8s_views_ns
+                __panelId__: "75"
+                summary: alert on pod restart
+              labels:
+                Critical: true
+              isPaused: false
+
+    contactpoints.yaml:
+      secret:
+        apiVersion: 1
+        contactPoints:
+          - orgId: 1
+            name: pagerduty
+            receivers:
+              - uid: pagerduty
+                type: pagerduty
+                settings:
+                  integrationKey: XXX
+                  severity: critical
+                  class: ping failure
+                  component: Grafana
+                  group: app-stack
+                  summary: |
+                    {{ `{{ include "default.message" . }}` }}
+
+    templates.yaml:
+      apiVersion: 1
+      templates:
+        - orgId: 1
+          name: my_first_template
+          template: |
+            {{ `
+            {{ define "my_first_template" }}
+            Custom notification message
+            {{ end }}
+            ` }}
+
   # Provision grafana-dashboards-kubernetes
   dashboardProviders:
     dashboardproviders.yaml:

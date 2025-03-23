@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: restart-test-pod
+  namespace: default
+spec:
+  restartPolicy: Always # Ensures the pod restarts when the container exits
+  containers:
+    - name: crash-container
+      image: busybox
+      command: ["/bin/sh", "-c", "sleep 2 && exit 1"] # Sleeps for 2 seconds, then exits with an error
