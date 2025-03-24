@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels:
+    app.kubernetes.io/name: {{ .Values.frontend.serviceName }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.frontend.serviceName }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.frontend.serviceName }}
+    spec:
+      containers:
+        - name: frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          ports:
+            - name: http-server
+              containerPort: {{ .Values.frontend.port }}
+          env:
+            - name: SERVICE_NAME
+              value: {{ .Values.frontend.serviceName }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.frontend.otelEndpoint }}
+            - name: PORT
+              value: "{{ .Values.frontend.port }}"
+            - name: GUESTBOOK_API_ADDR
+              value: {{ .Values.frontend.apiAddr }}
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}

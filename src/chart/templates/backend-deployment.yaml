@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-backend
+  labels:
+    app.kubernetes.io/name: {{ .Values.backend.serviceName }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.backend.serviceName }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.backend.serviceName }}
+    spec:
+      initContainers:
+        - name: init-db-ready
+          image: "{{ .Values.backend.initContainer.image.repository }}:{{ .Values.backend.initContainer.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.initContainer.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - echo "Waiting for mongodb at {{ .Values.backend.dbAddr }} to go live before the BE...";
+            - until (mongo --host {{ .Values.backend.dbAddr }} >/dev/null) do echo "Waiting for connection for 2 sec."; sleep 2; done
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - name: http-server
+              containerPort: {{ .Values.backend.port }}
+          env:
+            - name: SERVICE_NAME
+              value: {{ .Values.backend.serviceName }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.backend.otelEndpoint }}
+            - name: PORT
+              value: "{{ .Values.backend.port }}"
+            - name: GUESTBOOK_DB_ADDR
+              value: {{ .Values.backend.dbAddr }}
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}

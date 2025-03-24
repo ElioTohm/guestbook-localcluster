@@ -84,8 +84,7 @@ docker push localhost:5000/python-guestbook-frontend
 docker push localhost:5000/mongo:4
 
 print_header "Apply modified yaml files to pull image from local-registry"
-kubectl apply -f src/backend/kubernetes-manifests
-kubectl apply -f src/frontend/kubernetes-manifests
+helm upgrade --install python-guestbook ./src/chart/ -n default
 
 print_header "admin password: $(kubectl get secret --namespace monitoring monitoring-grafana -o jsonpath="{.data.admin-password}" | base64 --decode)"
 
