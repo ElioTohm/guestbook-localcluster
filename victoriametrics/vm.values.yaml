@@ -1,0 +1,60 @@
+otlp-metrics-endpoint: &otlp-metrics-endpoint
+  otelEndpoint: "http://otel-opentelemetry-collector.otlp:4317"
+
+replicaCount: 1
+
+backend:
+  image:
+    repository: localhost:5000/python-guestbook-backend
+    tag: latest
+    pullPolicy: Always
+  port: 8080
+  serviceName: python-guestbook-backend
+  <<: *otlp-metrics-endpoint
+  dbAddr: "python-guestbook-mongodb:27017"
+  resources: {}
+
+  initContainer:
+    image:
+      repository: localhost:5000/mongo
+      tag: "4"
+      pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+
+mongodb:
+  replicaCount: 1 # Added
+  image:
+    repository: localhost:5000/mongo # Added
+    tag: "4" # Added
+    pullPolicy: IfNotPresent # Added
+  port: 27017 # Added
+  resources: {} # Added
+  service:
+    port: 27017
+    targetPort: 27017
+
+frontend:
+  image:
+    repository: localhost:5000/python-guestbook-frontend
+    tag: latest
+    pullPolicy: Always
+  port: 8080
+  serviceName: python-guestbook-frontend
+  <<: *otlp-metrics-endpoint
+  apiAddr: "python-guestbook-backend:8080"
+  resources: {}
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+
+  ingress:
+    enabled: true
+    host: localhost
+    path: "/"
+    pathType: Prefix
