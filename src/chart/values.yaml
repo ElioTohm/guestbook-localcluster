@@ -1,4 +1,7 @@
 replicaCount: 1
+otlp-metrics-endpoint: &otlp-metrics-endpoint 
+  otelEndpoint: "http://otel-opentelemetry-collector.otlp:4317"
+
 backend:
   image:
     repository: localhost:5000/python-guestbook-backend
@@ -6,7 +9,7 @@ backend:
     pullPolicy: Always
   port: 8080
   serviceName: python-guestbook-backend
-  otelEndpoint: "http://k8s-monitoring-alloy-receiver.monitoring:4317"
+  <<: *otlp-metrics-endpoint
   dbAddr: "python-guestbook-mongodb:27017"
   resources: {}
 
@@ -40,7 +43,7 @@ frontend:
     pullPolicy: Always
   port: 8080
   serviceName: python-guestbook-frontend
-  otelEndpoint: "http://k8s-monitoring-alloy-receiver.monitoring:4317"
+  <<: *otlp-metrics-endpoint
   apiAddr: "python-guestbook-backend:8080"
   resources: {}
 
