@@ -1,6 +1,7 @@
-replicaCount: 1
 otlp-metrics-endpoint: &otlp-metrics-endpoint 
-  otelEndpoint: "http://otel-opentelemetry-collector.otlp:4317"
+  otelEndpoint: "http://k8s-monitoring-alloy-receiver.monitoring:4317"
+
+replicaCount: 1
 
 backend:
   image:
